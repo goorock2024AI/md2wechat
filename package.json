@@ -1,0 +1,9 @@
+{
+  "name": "md2wechat",
+  "version": "1.0.0",
+  "description": "Markdown转微信公众号HTML工具，支持路过图床上传",
+  "scripts": {
+    "dev": "npx serve",
+    "build": "echo 'Static site - no build needed'"
+  }
+}

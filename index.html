@@ -1,0 +1,1453 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MD2WeChat - Markdown 转微信公众号</title>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&family=Noto+Serif+SC:wght@400;700&family=Playfair+Display:wght@400;700&family=Source+Sans+Pro:wght@400;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+  <!-- Highlight.js -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/styles/github.min.css">
+  <script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/highlight.min.js"></script>
+
+  <!-- Editor CSS -->
+  <link rel="stylesheet" href="css/editor.css">
+
+  <style>
+    :root {
+      /* Default Theme Variables */
+      --primary: #1a1a1a;
+      --secondary: #666666;
+      --accent: #0066CC;
+      --background: #FFFFFF;
+      --surface: #F8F8F8;
+      --border: #E5E5E5;
+
+      /* Typography */
+      --font-sans: 'Noto Sans SC', 'Source Sans Pro', -apple-system, sans-serif;
+      --font-serif: 'Noto Serif SC', Georgia, serif;
+      --font-display: 'Playfair Display', serif;
+      --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+
+      /* Spacing */
+      --space-xs: 4px;
+      --space-sm: 8px;
+      --space-md: 16px;
+      --space-lg: 24px;
+      --space-xl: 32px;
+      --space-2xl: 48px;
+
+      /* Border Radius */
+      --radius-sm: 4px;
+      --radius-md: 8px;
+      --radius-lg: 12px;
+
+      /* Shadows */
+      --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
+      --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
+      --shadow-lg: 0 8px 24px rgba(0,0,0,0.12);
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html, body {
+      height: 100%;
+      font-family: var(--font-sans);
+      background: var(--surface);
+      color: var(--primary);
+      line-height: 1.6;
+    }
+
+    #root {
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Header */
+    .header {
+      height: 60px;
+      background: var(--background);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      padding: 0 var(--space-lg);
+      gap: var(--space-lg);
+      flex-shrink: 0;
+    }
+
+    .logo {
+      font-family: var(--font-display);
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--primary);
+      display: flex;
+      align-items: center;
+      gap: var(--space-sm);
+    }
+
+    .logo-icon {
+      width: 28px;
+      height: 28px;
+      background: linear-gradient(135deg, var(--accent), #004499);
+      border-radius: var(--radius-sm);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .header-actions {
+      display: flex;
+      gap: var(--space-sm);
+      margin-left: auto;
+    }
+
+    /* Buttons */
+    .btn {
+      padding: var(--space-sm) var(--space-md);
+      border-radius: var(--radius-md);
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      border: none;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      gap: var(--space-xs);
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background: #0055AA;
+    }
+
+    .btn-secondary {
+      background: var(--surface);
+      color: var(--primary);
+      border: 1px solid var(--border);
+    }
+
+    .btn-secondary:hover {
+      background: var(--border);
+    }
+
+    .btn-icon {
+      width: 36px;
+      height: 36px;
+      padding: 0;
+      justify-content: center;
+    }
+
+    /* Main Layout */
+    .main {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 1fr 1fr 320px;
+      min-height: 0;
+    }
+
+    .panel {
+      display: flex;
+      flex-direction: column;
+      background: var(--background);
+      border-right: 1px solid var(--border);
+      overflow: hidden;
+    }
+
+    .panel:last-child {
+      border-right: none;
+      background: var(--surface);
+    }
+
+    .panel-header {
+      padding: var(--space-md);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+    }
+
+    .panel-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .panel-content {
+      flex: 1;
+      overflow: auto;
+      padding: var(--space-md);
+    }
+
+    /* Editor */
+    .editor-textarea {
+      width: 100%;
+      height: 100%;
+      border: none;
+      resize: none;
+      font-family: var(--font-mono);
+      font-size: 14px;
+      line-height: 1.7;
+      padding: var(--space-md);
+      background: var(--background);
+      color: var(--primary);
+      outline: none;
+    }
+
+    .editor-textarea::placeholder {
+      color: var(--secondary);
+      opacity: 0.6;
+    }
+
+    /* Preview */
+    .preview-content {
+      max-width: 100%;
+      padding: var(--space-md);
+    }
+
+    .preview-content h1 {
+      font-family: var(--font-serif);
+      font-size: 2em;
+      font-weight: 700;
+      margin-bottom: var(--space-md);
+      line-height: 1.3;
+    }
+
+    .preview-content h2 {
+      font-family: var(--font-serif);
+      font-size: 1.5em;
+      font-weight: 700;
+      margin-top: var(--space-xl);
+      margin-bottom: var(--space-md);
+      line-height: 1.3;
+    }
+
+    .preview-content h3 {
+      font-size: 1.25em;
+      font-weight: 600;
+      margin-top: var(--space-lg);
+      margin-bottom: var(--space-sm);
+    }
+
+    .preview-content p {
+      margin-bottom: var(--space-md);
+      line-height: 1.8;
+    }
+
+    .preview-content a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+
+    .preview-content a:hover {
+      text-decoration: underline;
+    }
+
+    .preview-content ul, .preview-content ol {
+      margin-bottom: var(--space-md);
+      padding-left: var(--space-xl);
+    }
+
+    .preview-content li {
+      margin-bottom: var(--space-xs);
+    }
+
+    .preview-content img {
+      max-width: 100%;
+      border-radius: var(--radius-md);
+      margin: var(--space-md) 0;
+    }
+
+    .preview-content blockquote {
+      border-left: 3px solid var(--accent);
+      padding-left: var(--space-md);
+      margin: var(--space-md) 0;
+      color: var(--secondary);
+      font-style: italic;
+    }
+
+    .preview-content pre {
+      background: var(--surface);
+      padding: var(--space-md);
+      border-radius: var(--radius-md);
+      overflow-x: auto;
+      margin: var(--space-md) 0;
+    }
+
+    .preview-content code {
+      font-family: var(--font-mono);
+      font-size: 0.9em;
+    }
+
+    .preview-content :not(pre) > code {
+      background: var(--surface);
+      padding: 2px 6px;
+      border-radius: var(--radius-sm);
+    }
+
+    .preview-content hr {
+      border: none;
+      border-top: 1px solid var(--border);
+      margin: var(--space-xl) 0;
+    }
+
+    /* Gallery Component */
+    .gallery {
+      position: relative;
+      margin: var(--space-lg) 0;
+    }
+
+    .gallery-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: var(--space-sm);
+    }
+
+    .gallery-item {
+      aspect-ratio: 4/3;
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      cursor: pointer;
+      position: relative;
+    }
+
+    .gallery-item img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: transform 0.3s ease;
+    }
+
+    .gallery-item:hover img {
+      transform: scale(1.05);
+    }
+
+    .gallery-counter {
+      position: absolute;
+      bottom: var(--space-sm);
+      right: var(--space-sm);
+      background: rgba(0,0,0,0.7);
+      color: white;
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 12px;
+    }
+
+    /* Lightbox */
+    .lightbox {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.95);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.3s ease;
+    }
+
+    .lightbox.active {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .lightbox-content {
+      position: relative;
+      max-width: 90vw;
+      max-height: 90vh;
+    }
+
+    .lightbox-img {
+      max-width: 100%;
+      max-height: 85vh;
+      object-fit: contain;
+      border-radius: var(--radius-sm);
+    }
+
+    .lightbox-close {
+      position: absolute;
+      top: -40px;
+      right: 0;
+      width: 36px;
+      height: 36px;
+      background: rgba(255,255,255,0.2);
+      border: none;
+      border-radius: 50%;
+      color: white;
+      font-size: 20px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .lightbox-nav {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 48px;
+      height: 48px;
+      background: rgba(255,255,255,0.2);
+      border: none;
+      border-radius: 50%;
+      color: white;
+      font-size: 24px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.2s;
+    }
+
+    .lightbox-nav:hover {
+      background: rgba(255,255,255,0.3);
+    }
+
+    .lightbox-prev { left: -60px; }
+    .lightbox-next { right: -60px; }
+
+    .lightbox-dots {
+      position: absolute;
+      bottom: -40px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: var(--space-sm);
+    }
+
+    .lightbox-dot {
+      width: 8px;
+      height: 8px;
+      background: rgba(255,255,255,0.4);
+      border: none;
+      border-radius: 50%;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .lightbox-dot.active {
+      background: white;
+      transform: scale(1.2);
+    }
+
+    /* Config Panel */
+    .config-section {
+      margin-bottom: var(--space-lg);
+    }
+
+    .config-section-title {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: var(--space-md);
+    }
+
+    .template-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: var(--space-sm);
+    }
+
+    .template-card {
+      padding: var(--space-sm);
+      border: 2px solid var(--border);
+      border-radius: var(--radius-md);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .template-card:hover {
+      border-color: var(--secondary);
+    }
+
+    .template-card.active {
+      border-color: var(--accent);
+    }
+
+    .template-preview {
+      height: 60px;
+      border-radius: var(--radius-sm);
+      margin-bottom: var(--space-xs);
+    }
+
+    .template-name {
+      font-size: 12px;
+      font-weight: 500;
+      text-align: center;
+    }
+
+    .upload-zone {
+      border: 2px dashed var(--border);
+      border-radius: var(--radius-md);
+      padding: var(--space-lg);
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .upload-zone:hover {
+      border-color: var(--accent);
+      background: var(--background);
+    }
+
+    .upload-zone-text {
+      font-size: 13px;
+      color: var(--secondary);
+    }
+
+    .upload-zone-text strong {
+      color: var(--accent);
+    }
+
+    /* Visual Editor */
+    .control-group {
+      margin-bottom: var(--space-md);
+    }
+
+    .control-label {
+      font-size: 12px;
+      color: var(--secondary);
+      margin-bottom: var(--space-xs);
+      display: block;
+    }
+
+    .control-input {
+      width: 100%;
+      padding: var(--space-sm);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      font-size: 14px;
+      background: var(--background);
+    }
+
+    .control-input:focus {
+      outline: none;
+      border-color: var(--accent);
+    }
+
+    .color-input-wrapper {
+      display: flex;
+      gap: var(--space-sm);
+      align-items: center;
+    }
+
+    .color-input {
+      width: 40px;
+      height: 32px;
+      padding: 2px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+    }
+
+    .range-input {
+      width: 100%;
+      accent-color: var(--accent);
+    }
+
+    .range-value {
+      font-size: 12px;
+      color: var(--secondary);
+      text-align: right;
+      margin-top: var(--space-xs);
+    }
+
+    /* Toast */
+    .toast {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%) translateY(100px);
+      background: var(--primary);
+      color: white;
+      padding: var(--space-md) var(--space-lg);
+      border-radius: var(--radius-md);
+      font-size: 14px;
+      opacity: 0;
+      transition: all 0.3s ease;
+      z-index: 2000;
+    }
+
+    .toast.show {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
+    }
+
+    /* Responsive */
+    @media (max-width: 1200px) {
+      .main {
+        grid-template-columns: 1fr 1fr;
+      }
+      .config-panel {
+        position: fixed;
+        right: 0;
+        top: 60px;
+        bottom: 0;
+        width: 320px;
+        transform: translateX(100%);
+        transition: transform 0.3s ease;
+        z-index: 100;
+        box-shadow: var(--shadow-lg);
+      }
+      .config-panel.open {
+        transform: translateX(0);
+      }
+    }
+
+    @media (max-width: 768px) {
+      .main {
+        grid-template-columns: 1fr;
+      }
+      .editor-panel, .preview-panel {
+        display: none;
+      }
+      .editor-panel.active, .preview-panel.active {
+        display: flex;
+      }
+      .mobile-tabs {
+        display: flex;
+      }
+    }
+
+    .mobile-tabs {
+      display: none;
+      background: var(--background);
+      border-top: 1px solid var(--border);
+      padding: var(--space-sm);
+      gap: var(--space-sm);
+    }
+
+    .mobile-tab {
+      flex: 1;
+      padding: var(--space-sm);
+      border: none;
+      background: transparent;
+      font-size: 13px;
+      cursor: pointer;
+    }
+
+    .mobile-tab.active {
+      background: var(--accent);
+      color: white;
+      border-radius: var(--radius-sm);
+    }
+  </style>
+</head>
+<body>
+  <div id="root">
+    <header class="header">
+      <div class="logo">
+        <div class="logo-icon">M</div>
+        <span>MD2WeChat</span>
+      </div>
+
+      <div class="header-actions">
+        <button class="btn btn-secondary btn-icon" id="helpBtn" title="帮助">?</button>
+        <button class="btn btn-secondary" id="templateBtn">
+          <span>📋</span> 模板
+        </button>
+        <button class="btn btn-primary" id="exportBtn">
+          <span>📋</span> 复制 HTML
+        </button>
+      </div>
+    </header>
+
+    <div class="mobile-tabs">
+      <button class="mobile-tab active" data-tab="editor">编辑</button>
+      <button class="mobile-tab" data-tab="preview">预览</button>
+      <button class="mobile-tab" data-tab="config">配置</button>
+    </div>
+
+    <main class="main">
+      <!-- Editor Panel -->
+      <div class="panel editor-panel active">
+        <div class="panel-header">
+          <span class="panel-title">Markdown 编辑器</span>
+          <button class="btn btn-secondary btn-icon" id="insertGalleryBtn" title="插入图片画廊">🖼</button>
+        </div>
+        <textarea
+          class="editor-textarea"
+          id="editor"
+          placeholder="# 开始写作
+
+在这里输入 Markdown 内容...
+
+支持的功能：
+- **粗体** 和 *斜体*
+- 标题层级
+- 列表和引用
+- 代码高亮
+- 图片插入
+
+使用 :::gallery 语法插入图片幻灯片：
+:::gallery
+![图片1](url1)
+![图片2](url2)
+:::
+"
+        ></textarea>
+      </div>
+
+      <!-- Preview Panel -->
+      <div class="panel preview-panel active">
+        <div class="panel-header">
+          <span class="panel-title">实时预览</span>
+        </div>
+        <div class="panel-content">
+          <div class="preview-content" id="preview"></div>
+        </div>
+      </div>
+
+      <!-- Config Panel -->
+      <div class="panel config-panel" id="configPanel">
+        <div class="panel-header">
+          <span class="panel-title">样式配置</span>
+          <button class="btn btn-secondary btn-icon" id="closeConfigBtn">×</button>
+        </div>
+        <div class="panel-content">
+          <!-- Template Selection -->
+          <div class="config-section">
+            <div class="config-section-title">选择模板</div>
+            <div class="template-grid" id="templateGrid">
+              <div class="template-card active" data-template="minimal">
+                <div class="template-preview" style="background: #FFFFFF;"></div>
+                <div class="template-name">简约白</div>
+              </div>
+              <div class="template-card" data-template="magazine">
+                <div class="template-preview" style="background: #1a1a1a;"></div>
+                <div class="template-name">杂志黑</div>
+              </div>
+              <div class="template-card" data-template="corporate">
+                <div class="template-preview" style="background: #f0f4f8; border: 1px solid #0066CC;"></div>
+                <div class="template-name">商务蓝</div>
+              </div>
+              <div class="template-card" data-template="vintage">
+                <div class="template-preview" style="background: #faf5ef;"></div>
+                <div class="template-name">复古</div>
+              </div>
+              <div class="template-card" data-template="editorial">
+                <div class="template-preview" style="background: #fefefe; border-left: 3px solid #333;"></div>
+                <div class="template-name">编辑风</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Image Upload -->
+          <div class="config-section">
+            <div class="config-section-title">图片上传</div>
+            <div class="upload-zone" id="imageUploadZone">
+              <div class="upload-zone-text">
+                <strong>上传图片到腾讯云 COS</strong><br>
+                支持拖拽或点击上传
+              </div>
+            </div>
+            <input type="file" id="imageFileInput" accept="image/*" style="display: none;">
+            <div id="uploadStatus" style="margin-top: 8px; font-size: 12px; color: var(--secondary);"></div>
+          </div>
+
+          <!-- CSS Import -->
+          <div class="config-section">
+            <div class="config-section-title">自定义 CSS</div>
+            <div class="upload-zone" id="cssUploadZone">
+              <div class="upload-zone-text">
+                点击上传或拖拽 .css 文件<br>
+                <strong>或粘贴 CSS 代码</strong>
+              </div>
+            </div>
+            <input type="file" id="cssFileInput" accept=".css" style="display: none;">
+            <textarea
+              id="customCssInput"
+              class="control-input"
+              style="margin-top: var(--space-md); height: 100px; font-family: var(--font-mono); font-size: 12px;"
+              placeholder="/* 在这里粘贴自定义 CSS */"
+            ></textarea>
+          </div>
+
+          <!-- Visual Editor -->
+          <div class="config-section">
+            <div class="config-section-title">可视化调整</div>
+
+            <div class="control-group">
+              <label class="control-label">主题色</label>
+              <div class="color-input-wrapper">
+                <input type="color" class="color-input" id="primaryColor" value="#1a1a1a">
+                <input type="text" class="control-input" id="primaryColorText" value="#1a1a1a" style="flex: 1;">
+              </div>
+            </div>
+
+            <div class="control-group">
+              <label class="control-label">强调色</label>
+              <div class="color-input-wrapper">
+                <input type="color" class="color-input" id="accentColor" value="#0066CC">
+                <input type="text" class="control-input" id="accentColorText" value="#0066CC" style="flex: 1;">
+              </div>
+            </div>
+
+            <div class="control-group">
+              <label class="control-label">背景色</label>
+              <div class="color-input-wrapper">
+                <input type="color" class="color-input" id="bgColor" value="#FFFFFF">
+                <input type="text" class="control-input" id="bgColorText" value="#FFFFFF" style="flex: 1;">
+              </div>
+            </div>
+
+            <div class="control-group">
+              <label class="control-label">正文字体大小</label>
+              <input type="range" class="range-input" id="fontSize" min="14" max="20" value="16">
+              <div class="range-value"><span id="fontSizeValue">16</span>px</div>
+            </div>
+
+            <div class="control-group">
+              <label class="control-label">行高</label>
+              <input type="range" class="range-input" id="lineHeight" min="1.4" max="2.2" step="0.1" value="1.8">
+              <div class="range-value"><span id="lineHeightValue">1.8</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- Lightbox -->
+    <div class="lightbox" id="lightbox">
+      <div class="lightbox-content">
+        <button class="lightbox-close" id="lightboxClose">×</button>
+        <button class="lightbox-nav lightbox-prev" id="lightboxPrev">‹</button>
+        <img class="lightbox-img" id="lightboxImg" src="" alt="">
+        <button class="lightbox-nav lightbox-next" id="lightboxNext">›</button>
+        <div class="lightbox-dots" id="lightboxDots"></div>
+      </div>
+    </div>
+
+    <!-- Toast -->
+    <div class="toast" id="toast">已复制到剪贴板！</div>
+  </div>
+
+  <!-- marked.js -->
+  <script src="https://cdn.jsdelivr.net/npm/marked@12.0.0/marked.min.js"></script>
+
+  <!-- Main Application -->
+  <script>
+    // ============================================
+    // State Management
+    // ============================================
+    const state = {
+      markdown: '',
+      currentTemplate: 'minimal',
+      customCss: '',
+      galleryImages: [],
+      lightboxIndex: 0
+    };
+
+    // ============================================
+    // Template Definitions
+    // ============================================
+    const templates = {
+      minimal: {
+        primary: '#1a1a1a',
+        secondary: '#666666',
+        accent: '#0066CC',
+        background: '#FFFFFF',
+        surface: '#F8F8F8'
+      },
+      magazine: {
+        primary: '#FFFFFF',
+        secondary: '#AAAAAA',
+        accent: '#FF6B6B',
+        background: '#1a1a1a',
+        surface: '#2D2D2D'
+      },
+      corporate: {
+        primary: '#1E3A5F',
+        secondary: '#5A7A9A',
+        accent: '#0066CC',
+        background: '#F0F4F8',
+        surface: '#FFFFFF'
+      },
+      vintage: {
+        primary: '#4A3728',
+        secondary: '#8B7355',
+        accent: '#C4A77D',
+        background: '#FAF5EF',
+        surface: '#F5EDE4'
+      },
+      editorial: {
+        primary: '#222222',
+        secondary: '#555555',
+        accent: '#222222',
+        background: '#FEFEFE',
+        surface: '#FAFAFA'
+      }
+    };
+
+    // ============================================
+    // DOM Elements
+    // ============================================
+    const editor = document.getElementById('editor');
+    const preview = document.getElementById('preview');
+    const lightbox = document.getElementById('lightbox');
+    const lightboxImg = document.getElementById('lightboxImg');
+    const lightboxDots = document.getElementById('lightboxDots');
+    const toast = document.getElementById('toast');
+    const configPanel = document.getElementById('configPanel');
+
+    // ============================================
+    // Markdown Parser with Gallery Extension
+    // ============================================
+    function parseMarkdown(md) {
+      // Replace :::gallery blocks with gallery markers
+      let processed = md.replace(
+        /:::gallery\n([\s\S]*?)\n:::/g,
+        (match, content) => {
+          const images = [];
+          const imgRegex = /!\[([^\]]*)\]\(([^)]+)\)/g;
+          let imgMatch;
+          while ((imgMatch = imgRegex.exec(content)) !== null) {
+            images.push({ alt: imgMatch[1], src: imgMatch[2] });
+          }
+          const galleryId = 'gallery_' + Math.random().toString(36).substr(2, 9);
+          return `<div class="gallery" id="${galleryId}" data-images='${JSON.stringify(images)}'></div>`;
+        }
+      );
+
+      return marked.parse(processed, {
+        breaks: true,
+        gfm: true,
+        highlight: function(code, lang) {
+          if (lang && hljs.getLanguage(lang)) {
+            return hljs.highlight(code, { language: lang }).value;
+          }
+          return hljs.highlightAuto(code).value;
+        }
+      });
+    }
+
+    // ============================================
+    // Gallery Renderer
+    // ============================================
+    function renderGalleries() {
+      document.querySelectorAll('.gallery').forEach(gallery => {
+        const images = JSON.parse(gallery.dataset.images || '[]');
+        if (images.length === 0) return;
+
+        const grid = document.createElement('div');
+        grid.className = 'gallery-grid';
+
+        images.forEach((img, index) => {
+          const item = document.createElement('div');
+          item.className = 'gallery-item';
+          item.innerHTML = `
+            <img src="${img.src}" alt="${img.alt}" loading="lazy">
+            ${images.length > 1 ? `<span class="gallery-counter">${index + 1}/${images.length}</span>` : ''}
+          `;
+          item.addEventListener('click', () => openLightbox(images, index));
+          grid.appendChild(item);
+        });
+
+        gallery.innerHTML = '';
+        gallery.appendChild(grid);
+      });
+    }
+
+    // ============================================
+    // Lightbox Functions
+    // ============================================
+    function openLightbox(images, index) {
+      state.galleryImages = images;
+      state.lightboxIndex = index;
+
+      updateLightboxImage();
+      updateLightboxDots();
+      lightbox.classList.add('active');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeLightbox() {
+      lightbox.classList.remove('active');
+      document.body.style.overflow = '';
+    }
+
+    function updateLightboxImage() {
+      const img = state.galleryImages[state.lightboxIndex];
+      if (img) {
+        lightboxImg.src = img.src;
+        lightboxImg.alt = img.alt;
+      }
+    }
+
+    function updateLightboxDots() {
+      lightboxDots.innerHTML = state.galleryImages.map((_, i) => `
+        <button class="lightbox-dot ${i === state.lightboxIndex ? 'active' : ''}"
+                data-index="${i}"></button>
+      `).join('');
+
+      lightboxDots.querySelectorAll('.lightbox-dot').forEach(dot => {
+        dot.addEventListener('click', () => {
+          state.lightboxIndex = parseInt(dot.dataset.index);
+          updateLightboxImage();
+          updateLightboxDots();
+        });
+      });
+    }
+
+    function nextImage() {
+      state.lightboxIndex = (state.lightboxIndex + 1) % state.galleryImages.length;
+      updateLightboxImage();
+      updateLightboxDots();
+    }
+
+    function prevImage() {
+      state.lightboxIndex = (state.lightboxIndex - 1 + state.galleryImages.length) % state.galleryImages.length;
+      updateLightboxImage();
+      updateLightboxDots();
+    }
+
+    // ============================================
+    // Preview Update
+    // ============================================
+    function updatePreview() {
+      const html = parseMarkdown(state.markdown);
+      preview.innerHTML = html;
+      renderGalleries();
+
+      // Apply custom styles
+      applyStyles();
+    }
+
+    // ============================================
+    // Style Application
+    // ============================================
+    function applyStyles() {
+      const root = document.documentElement;
+      const template = templates[state.currentTemplate];
+
+      // Apply template colors
+      if (template) {
+        root.style.setProperty('--primary', template.primary);
+        root.style.setProperty('--secondary', template.secondary);
+        root.style.setProperty('--accent', template.accent);
+        root.style.setProperty('--background', template.background);
+        root.style.setProperty('--surface', template.surface);
+      }
+
+      // Apply custom CSS
+      if (state.customCss) {
+        let styleEl = document.getElementById('custom-styles');
+        if (!styleEl) {
+          styleEl = document.createElement('style');
+          styleEl.id = 'custom-styles';
+          document.head.appendChild(styleEl);
+        }
+        styleEl.textContent = state.customCss;
+      }
+    }
+
+    // ============================================
+    // Template Selection
+    // ============================================
+    function selectTemplate(templateName) {
+      state.currentTemplate = templateName;
+
+      // Update UI
+      document.querySelectorAll('.template-card').forEach(card => {
+        card.classList.toggle('active', card.dataset.template === templateName);
+      });
+
+      applyStyles();
+      saveState();
+    }
+
+    // ============================================
+    // Export Functions
+    // ============================================
+    function exportHTML() {
+      const html = parseMarkdown(state.markdown);
+
+      // Create exportable HTML
+      const exportDoc = `<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/styles/github.min.css">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Noto Sans SC', -apple-system, sans-serif;
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 20px;
+      line-height: 1.8;
+      color: ${getComputedStyle(document.documentElement).getPropertyValue('--primary').trim()};
+      background: ${getComputedStyle(document.documentElement).getPropertyValue('--background').trim()};
+    }
+    h1, h2, h3 { font-weight: 700; line-height: 1.3; margin: 1.5em 0 0.5em; }
+    h1 { font-size: 2em; }
+    h2 { font-size: 1.5em; }
+    h3 { font-size: 1.25em; }
+    p { margin: 1em 0; }
+    a { color: ${getComputedStyle(document.documentElement).getPropertyValue('--accent').trim()}; }
+    ul, ol { padding-left: 1.5em; margin: 1em 0; }
+    img { max-width: 100%; border-radius: 8px; margin: 1em 0; }
+    blockquote {
+      border-left: 3px solid ${getComputedStyle(document.documentElement).getPropertyValue('--accent').trim()};
+      padding-left: 1em;
+      margin: 1em 0;
+      color: ${getComputedStyle(document.documentElement).getPropertyValue('--secondary').trim()};
+    }
+    pre { background: ${getComputedStyle(document.documentElement).getPropertyValue('--surface').trim()}; padding: 1em; border-radius: 8px; overflow-x: auto; }
+    code { font-family: 'JetBrains Mono', monospace; }
+    :not(pre) > code { background: ${getComputedStyle(document.documentElement).getPropertyValue('--surface').trim()}; padding: 2px 6px; border-radius: 4px; }
+    .gallery-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; margin: 1.5em 0; }
+    .gallery-item { aspect-ratio: 4/3; border-radius: 8px; overflow: hidden; }
+    .gallery-item img { width: 100%; height: 100%; object-fit: cover; margin: 0; }
+  </style>
+</head>
+<body>
+${html}
+</body>
+</html>`;
+
+      return exportDoc;
+    }
+
+    async function copyToClipboard() {
+      const html = exportHTML();
+      try {
+        await navigator.clipboard.writeText(html);
+        showToast('已复制到剪贴板！');
+      } catch (err) {
+        // Fallback
+        const textarea = document.createElement('textarea');
+        textarea.value = html;
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textarea);
+        showToast('已复制到剪贴板！');
+      }
+    }
+
+    function showToast(message) {
+      toast.textContent = message;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 2000);
+    }
+
+    // ============================================
+    // CSS Upload & Visual Editor
+    // ============================================
+    function handleCssUpload(file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        state.customCss = e.target.result;
+        document.getElementById('customCssInput').value = e.target.result;
+        applyStyles();
+        saveState();
+      };
+      reader.readAsText(file);
+    }
+
+    function updateStyleValue(id, textId, value) {
+      document.getElementById(textId).value = value;
+      document.documentElement.style.setProperty(`--${id.replace('Color', '')}`, value);
+      if (templates[state.currentTemplate]) {
+        templates[state.currentTemplate][id] = value;
+      }
+      saveState();
+    }
+
+    // ============================================
+    // State Persistence
+    // ============================================
+    function saveState() {
+      const stateToSave = {
+        markdown: state.markdown,
+        currentTemplate: state.currentTemplate,
+        customCss: state.customCss
+      };
+      localStorage.setItem('md2wechat_state', JSON.stringify(stateToSave));
+    }
+
+    function loadState() {
+      try {
+        const saved = localStorage.getItem('md2wechat_state');
+        if (saved) {
+          const data = JSON.parse(saved);
+          if (data.markdown) {
+            state.markdown = data.markdown;
+            editor.value = data.markdown;
+          }
+          if (data.currentTemplate) {
+            selectTemplate(data.currentTemplate);
+          }
+          if (data.customCss) {
+            state.customCss = data.customCss;
+            document.getElementById('customCssInput').value = data.customCss;
+          }
+        }
+      } catch (e) {
+        console.warn('Failed to load state:', e);
+      }
+    }
+
+    // ============================================
+    // Event Listeners
+    // ============================================
+    editor.addEventListener('input', (e) => {
+      state.markdown = e.target.value;
+      updatePreview();
+      saveState();
+    });
+
+    document.getElementById('exportBtn').addEventListener('click', copyToClipboard);
+
+    document.getElementById('templateBtn').addEventListener('click', () => {
+      configPanel.classList.toggle('open');
+    });
+
+    document.getElementById('closeConfigBtn').addEventListener('click', () => {
+      configPanel.classList.remove('open');
+    });
+
+    document.querySelectorAll('.template-card').forEach(card => {
+      card.addEventListener('click', () => {
+        selectTemplate(card.dataset.template);
+      });
+    });
+
+    document.getElementById('cssUploadZone').addEventListener('click', () => {
+      document.getElementById('cssFileInput').click();
+    });
+
+    document.getElementById('cssFileInput').addEventListener('change', (e) => {
+      if (e.target.files[0]) {
+        handleCssUpload(e.target.files[0]);
+      }
+    });
+
+    document.getElementById('customCssInput').addEventListener('input', (e) => {
+      state.customCss = e.target.value;
+      applyStyles();
+      saveState();
+    });
+
+    // Color inputs
+    document.getElementById('primaryColor').addEventListener('input', (e) => {
+      updateStyleValue('primaryColor', 'primaryColorText', e.target.value);
+    });
+    document.getElementById('primaryColorText').addEventListener('input', (e) => {
+      updateStyleValue('primaryColor', 'primaryColor', e.target.value);
+    });
+    document.getElementById('accentColor').addEventListener('input', (e) => {
+      updateStyleValue('accentColor', 'accentColorText', e.target.value);
+    });
+    document.getElementById('accentColorText').addEventListener('input', (e) => {
+      updateStyleValue('accentColor', 'accentColor', e.target.value);
+    });
+    document.getElementById('bgColor').addEventListener('input', (e) => {
+      updateStyleValue('bgColor', 'bgColorText', e.target.value);
+    });
+    document.getElementById('bgColorText').addEventListener('input', (e) => {
+      updateStyleValue('bgColor', 'bgColor', e.target.value);
+    });
+
+    // Range inputs
+    document.getElementById('fontSize').addEventListener('input', (e) => {
+      document.getElementById('fontSizeValue').textContent = e.target.value;
+      document.documentElement.style.setProperty('--font-size', e.target.value + 'px');
+      saveState();
+    });
+    document.getElementById('lineHeight').addEventListener('input', (e) => {
+      document.getElementById('lineHeightValue').textContent = e.target.value;
+      document.documentElement.style.setProperty('--line-height', e.target.value);
+      saveState();
+    });
+
+    // Lightbox controls
+    document.getElementById('lightboxClose').addEventListener('click', closeLightbox);
+    document.getElementById('lightboxPrev').addEventListener('click', prevImage);
+    document.getElementById('lightboxNext').addEventListener('click', nextImage);
+    lightbox.addEventListener('click', (e) => {
+      if (e.target === lightbox) closeLightbox();
+    });
+
+    // Keyboard navigation
+    document.addEventListener('keydown', (e) => {
+      if (lightbox.classList.contains('active')) {
+        if (e.key === 'ArrowRight') nextImage();
+        if (e.key === 'ArrowLeft') prevImage();
+        if (e.key === 'Escape') closeLightbox();
+      }
+    });
+
+    // Insert gallery button
+    document.getElementById('insertGalleryBtn').addEventListener('click', () => {
+      const galleryTemplate = `\n:::gallery\n![图片1](https://picsum.photos/400/300)\n![图片2](https://picsum.photos/401/300)\n![图片3](https://picsum.photos/402/300)\n:::\n`;
+      const start = editor.selectionStart;
+      const before = editor.value.substring(0, start);
+      const after = editor.value.substring(editor.selectionEnd);
+      editor.value = before + galleryTemplate + after;
+      editor.selectionStart = editor.selectionEnd = start + galleryTemplate.length;
+      editor.focus();
+      updatePreview();
+      saveState();
+    });
+
+    // Mobile tabs
+    document.querySelectorAll('.mobile-tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        document.querySelectorAll('.mobile-tab').forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+
+        const tabName = tab.dataset.tab;
+        document.querySelector('.editor-panel').classList.toggle('active', tabName === 'editor');
+        document.querySelector('.preview-panel').classList.toggle('active', tabName === 'preview');
+        if (tabName === 'config') {
+          configPanel.classList.add('open');
+        } else {
+          configPanel.classList.remove('open');
+        }
+      });
+    });
+
+    // Drag and drop for CSS upload
+    const uploadZone = document.getElementById('cssUploadZone');
+    uploadZone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      uploadZone.style.borderColor = 'var(--accent)';
+    });
+    uploadZone.addEventListener('dragleave', () => {
+      uploadZone.style.borderColor = '';
+    });
+    uploadZone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      uploadZone.style.borderColor = '';
+      const file = e.dataTransfer.files[0];
+      if (file && file.name.endsWith('.css')) {
+        handleCssUpload(file);
+      }
+    });
+
+    // ============================================
+    // Image Upload (Direct to imgurl.org)
+    // ============================================
+    const imageUploadZone = document.getElementById('imageUploadZone');
+    const imageFileInput = document.getElementById('imageFileInput');
+    const uploadStatus = document.getElementById('uploadStatus');
+
+    imageUploadZone.addEventListener('click', () => {
+      imageFileInput.click();
+    });
+
+    imageFileInput.addEventListener('change', (e) => {
+      if (e.target.files[0]) {
+        handleImageUpload(e.target.files[0]);
+      }
+    });
+
+    imageUploadZone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      imageUploadZone.style.borderColor = 'var(--accent)';
+    });
+    imageUploadZone.addEventListener('dragleave', () => {
+      imageUploadZone.style.borderColor = '';
+    });
+    imageUploadZone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      imageUploadZone.style.borderColor = '';
+      const file = e.dataTransfer.files[0];
+      if (file && file.type.startsWith('image/')) {
+        handleImageUpload(file);
+      }
+    });
+
+    async function handleImageUpload(file) {
+      // Check file size (10MB limit for WeChat)
+      if (file.size > 10 * 1024 * 1024) {
+        showToast('图片大小不能超过 10MB');
+        return;
+      }
+
+      uploadStatus.textContent = '正在上传...';
+      uploadStatus.style.color = 'var(--accent)';
+
+      try {
+        // Convert file to base64
+        const imageData = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result);
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        });
+
+        // Upload directly to imgurl.org (路过图床)
+        const formData = new FormData();
+        formData.append('file', file);
+
+        const response = await fetch('https://imgurl.org/api/v2/upload', {
+          method: 'POST',
+          body: formData
+        });
+
+        const result = await response.json();
+
+        if (result.code === 'success' || result.code === 200) {
+          uploadStatus.textContent = '上传成功！';
+          uploadStatus.style.color = '#22c55e';
+
+          // Insert markdown image syntax at cursor
+          const mdImage = `\n![${file.name}](${result.data.url})\n`;
+          const start = editor.selectionStart;
+          const before = editor.value.substring(0, start);
+          const after = editor.value.substring(editor.selectionEnd);
+          editor.value = before + mdImage + after;
+          editor.selectionStart = editor.selectionEnd = start + mdImage.length;
+          editor.focus();
+          updatePreview();
+          saveState();
+
+          // Reset status after 2s
+          setTimeout(() => {
+            uploadStatus.textContent = '';
+          }, 2000);
+        } else {
+          uploadStatus.textContent = '上传失败: ' + (result.message || '未知错误');
+          uploadStatus.style.color = '#ef4444';
+        }
+      } catch (error) {
+        uploadStatus.textContent = '上传失败: ' + error.message;
+        uploadStatus.style.color = '#ef4444';
+      }
+    }
+
+    // ============================================
+    // Initialize
+    // ============================================
+    loadState();
+    updatePreview();
+  </script>
+</body>
+</html>
