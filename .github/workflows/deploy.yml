@@ -12,6 +12,9 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          node-version: '24'
+          FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
 
       - name: Clone original Markdown2Html
         run: |
@@ -28,21 +31,23 @@ jobs:
           cp /tmp/original/main.js ./main.js
           cp /tmp/original/watch.js ./watch.js
           cp /tmp/original/package.json ./package.json
+          # 保留 yarn.lock 让 npm ci 可以工作
+          cp /tmp/original/yarn.lock ./yarn.lock
 
       - name: Update repository info
         run: |
           sed -i 's/"name": "markdown2wechat"/"name": "md2wechat"/' package.json
           sed -i 's|"url": "https://github.com/TaleAi/markdown2html"|"url": "https://github.com/goorock2024AI/md2wechat"|' package.json
-          rm -f yarn.lock package-lock.json
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
-          cache: 'npm'
+          node-version: '24'
 
-      - name: Install dependencies
-        run: npm ci
+      - name: Install dependencies (use China npm mirror)
+        run: |
+          npm config set registry https://registry.npmmirror.com
+          npm ci || npm install
 
       - name: Build
         run: npm run build
@@ -54,23 +59,4 @@ jobs:
         with:
           name: build
           path: build
-          retention-days: 1
-
-  deploy:
-    needs: build
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Download artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: build
-          path: build
-
-      - name: Deploy to Vercel
-        uses: amondnet/vercel-action@v25
-        with:
-          vercel-token: \${{ secrets.VERCEL_TOKEN }}
-          vercel-org-id: \${{ secrets.VERCEL_ORG_ID }}
-          vercel-project-id: \${{ secrets.VERCEL_PROJECT_ID }}
-          working-directory: build
+          retention-days: 7
